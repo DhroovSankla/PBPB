@@ -10,7 +10,7 @@ app/build/
 .kotlin
 
 # log file gen.
-LogAnalyzer/app/input_logs.txt
+app/input_logs.txt
 
 # Ignore IDE Files
 .vscode/
