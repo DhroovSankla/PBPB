@@ -20,6 +20,6 @@ A production-grade, zero-allocation Command Line Interface (CLI) utility built i
 ### Installation & Compilation
 Clone this repository and verify your build compilation status directly from your terminal:
 ```bash
-git clone [https://github.com/DhroovSankla/LogAnalyzer.git](https://github.com/DhroovSankla/LogAnalyzer.git)
+git clone [https://github.com/DhroovSankla/LogAnalyzer.git]
 cd LogAnalyzer
 ./gradlew build
