@@ -3,51 +3,58 @@ package com.loganalyzer;
 import com.loganalyzer.model.LogResult;
 import com.loganalyzer.parser.ConcurrentAnalyzer;
 import com.loganalyzer.parser.SequentialAnalyzer;
+import java.io.File;
 
 public class Main {
     public static void main(String[] args) {
-        System.out.println("=== Starting High Performance Log Analysis ===");
-        String logFilePath = "input_logs.txt";
-
-        // 1. Run Sequential Baseline Analysis
-        System.out.println("\n[1/2] Executing Sequential (Single-Threaded) Baseline...");
-        LogResult sequentialResult = SequentialAnalyzer.analyze(logFilePath);
-        double sequentialTime = sequentialResult.processingTimeMs() / 1000.0;
-        System.out.println("-> Baseline Done in " + sequentialTime + " seconds.");
-
-        // 2. Run Concurrent Virtual Thread Engine
-        System.out.println("\n[2/2] Executing Concurrent (Java 21 Virtual Threads) Engine...");
-        LogResult concurrentResult = ConcurrentAnalyzer.analyze(logFilePath);
-        double concurrentTime = concurrentResult.processingTimeMs() / 1000.0;
+        System.out.println("=== High Performance Log Analyzer ===");
         
-        // 3. Print Final Report Dashboard
-        printReport(concurrentResult);
+        String logFilePath;
 
-        // 4. Calculate Speedup Metrics
-        double speedupMultiplier = sequentialTime / concurrentTime;
-        System.out.println("============================================================");
-        System.out.println("                 PERFORMANCE METRICS REPORT                 ");
-        System.out.println("============================================================");
-        System.out.println(String.format("Sequential Processing Time  : %.3f seconds", sequentialTime));
-        System.out.println(String.format("Virtual Thread Engine Time  : %.3f seconds", concurrentTime));
-        System.out.println(String.format("Performance Optimization    : %.2fx FASTER!", speedupMultiplier));
-        System.out.println("============================================================\n");
+        // PRODUCTION CHECK: Did the user provide a file path via the terminal?
+        if (args.length > 0) {
+            logFilePath = args[0];
+            File targetFile = new File(logFilePath);
+            
+            if (!targetFile.exists() || !targetFile.isFile()) {
+                System.err.println("CRITICAL ERROR: The specified log file does not exist: " + logFilePath);
+                System.exit(1);
+            }
+            System.out.println("Target Production Log File Detected: " + targetFile.getAbsolutePath());
+        } else {
+            // FALLBACK: If no argument is passed, act as a local sandbox and use/generate dummy data
+            logFilePath = "input_logs.txt";
+            File dummyFile = new File(logFilePath);
+            if (!dummyFile.exists()) {
+                System.out.println("No production file provided. Generating 5-million line sandbox log file...");
+                LogGenerator.generateMockLogs(logFilePath, 5_000_000);
+            } else {
+                System.out.println("No production file provided. Using existing sandbox 'input_logs.txt' file.");
+            }
+        }
+
+        // Run the optimized Engines on the target file path
+        System.out.println("\nExecuting Sequential Baseline...");
+        LogResult sequentialResult = SequentialAnalyzer.analyze(logFilePath);
+
+        System.out.println("\nExecuting Optimized Virtual Thread Engine...");
+        LogResult concurrentResult = ConcurrentAnalyzer.analyze(logFilePath);
+        
+        printPerformanceMetrics(sequentialResult, concurrentResult);
     }
 
-    private static void printReport(LogResult result) {
+    private static void printPerformanceMetrics(LogResult seq, LogResult con) {
+        double seqTime = seq.processingTimeMs() / 1000.0;
+        double conTime = con.processingTimeMs() / 1000.0;
+        double speedup = seqTime / conTime;
+
         System.out.println("\n============================================================");
-        System.out.println("           SYSTEM PERFORMANCE CORE LOG REPORT              ");
+        System.out.println("                 FINAL PERFORMANCE REPORT                   ");
         System.out.println("============================================================");
-        System.out.println("Total Lines Processed      : " + String.format("%,d", result.totalLines()) + " lines");
-        System.out.println("------------------------------------------------------------");
-        System.out.println("CONCURRENT LOG LEVEL BREAKDOWN:");
-        result.levelCounts().forEach((level, count) -> 
-            System.out.println(String.format(" - %-6s : %,d lines", level, count))
-        );
-        System.out.println("------------------------------------------------------------");
-        System.out.println("TOP FAILING MODULES (ERRORS):");
-        result.moduleErrorCounts().entrySet().stream()
-            .sorted((e1, e2) -> e2.getValue().compareTo(e1.getValue()))
-            .forEach(entry -> System.out.println(String.format(" * %-20s : %,d errors", entry.getKey(), entry.getValue())));
+        System.out.println(String.format("Target File                 : %s", seq.totalLines() + " lines"));
+        System.out.println(String.format("Sequential (Single Thread)  : %.3f seconds", seqTime));
+        System.out.println(String.format("Concurrent (Virtual Threads): %.3f seconds", conTime));
+        System.out.println(String.format("Performance Multiplier      : %.2fx FASTER!", speedup));
+        System.out.println("============================================================\n");
     }
 }
